@@ -1,0 +1,24 @@
+Trade study to determine whether to use a real-time or non-real time operating system
+
+
+
+The purpose of this trade study is to determine whether or not a real time operating system is needed to control the command and data handling operations in a CubeSat. In a lot of industries, contemporary developers and consumers work with operating systems that do not rely on real-time operations to occur. The need for tasks to be completed within a time constraint is not present in many systems, and with the added complexity overhead, this further reduces the availability of such systems. On the other hand, space systems have different requirements and are usually application specific, which means the software being developed does not need to be designed to be portable or modular. 
+
+The definition of real time in operating systems per the POSIX Standard 1003.1 is the ability of the operating system to provide a required level of service in a bounded response time. Having a bounded time response is important for many of the applications on a spacecraft.
+
+Looking at several other similar missions and existing technology for CubeSats reveal that most, if not all, use a RTOS (Real-time Operating system). It seems that FreeRTOS (www.freertos.org) is a commonly used and open source operating system for both CubeSats and other industrial applications. Also, from further research, it seems that the argument for CubeSats software frames works isn't whether to use a RTOS versus a non-RTOS, but rather to just use a real-time framework or to have the added overhead of using a RTOS. 
+
+A few of the CubeSat missions that used a RTOS include the following:
+
+CanX-4 & 5 (Uses CANOE Operating System)
+Source: https://tspace.library.utoronto.ca/bitstream/1807/33285/3/Leonard_Matthew_L_201211_MASc_thesis.pdf
+
+CySat 1 (Uses FreeRTOS)
+Source: https://sites.google.com/site/cysatiowastateuniversity/about-us
+Source: https://github.com/m2i/cysat
+
+UWE-1 (Uses µCLinux which is a soft real-time implementation)
+http://www.eoportal.org/directory/pres_UWE1UniversittWrzburgsExperimentalsatellit1.html
+
+There are many other CubeSat missions that use similar real-time frameworks for the Command and Data Handling, but almost no satellites that use an alternative. For the purpose of the PROPHACY mission, it is my recommendation that the use of a Real-time Operating system is used. More specifically, the use of FreeRTOS seems to be the best choice.
+

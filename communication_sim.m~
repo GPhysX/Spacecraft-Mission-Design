@@ -1,0 +1,11 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Communication Simulator %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+sc_altitude  = 370; %km
+earth_radius = 6378.1; %km
+sc_radius    = sc_altitude + earth_radius; %km
+
+
+

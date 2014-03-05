@@ -1,0 +1,24 @@
+Requirments
+
+
+The C&DH subsystem shall be at technology readiness level in the range from 5 to 7.
+
+The C&DH subsystem shall execute all related commands.
+
+The C&DH subsystem shall be able to recover from resets and loss of power.
+
+The C&DH subsystem shall allow for communications between all subsystems.
+
+The C&DH subsystem shall receive laser communication data and relay that data to mission control.
+
+The C&DH subsystem shall operate with 99% confidence over the span of the mission. 
+
+The C&DH subsystem shall operate under 1 Watt of power over the lifetime of the mission.
+
+The C&DH subsystem shall provide a (Insert connection protocol for laser comm) connection for the laser communication subsystem, with no less than (Required Laser Bandwidth) bits/second bandwidth. 
+
+The C&DH subsystem shall meet the constraints of a 3u cube satellite specification, more specifically, the board shall meet the constraints of 9.5 centimeters width by 9.5 cm centimeters length and no more than 2 centimeters tall.
+
+The C&DH subsystem shall have the ability to store at least three hours of collected laser communication and attitude control data. The justification behind three hours of storage is a precaution in the case that ground communication is lost with the PROPHACY satellite, which will have an orbital period of roughly 1.6 hours.
+
+

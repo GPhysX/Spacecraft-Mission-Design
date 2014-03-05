@@ -1,0 +1,7 @@
+Trade study to determine whether to use a real-time or non-real time operating system
+
+
+One of the most effective ways to determine whether or not to use a specific subsystem over another is to look at previous missions with similar 
+
+
+The purpose of this trade study is to determine whether or not a real time operating system is needed to control the command and data handling operations in a CubeSat. In a lot of industries, contemporary developers and consumers work with operating systems that do not rely on real-time operations to occur. The need for tasks to be completed within a time constraint is not present in many systems, and with the added complexity overhead, this further reduces the availability of such systems. On the other hand, space systems have different requirements and are usually application specific, which means the software being developed is not portable or modular. 
