@@ -1,41 +1,43 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Communication Simulator %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%   Communication Simulator        %%%%%%
+%%%%%%%   Created by: Zachary Tschirhart %%%%%%
+%%%%%%%   For Team PROPHACY Mission      %%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function communication_sim
 sc_altitude  = 370; %km
 earth_radius = 6378.1; %km
 sc_radius    = sc_altitude + earth_radius; %km
-[altitude, temp, pres, rho, c, g, mu, nu, k, n, n_sum] = atmosphere();
+%[altitude, temp, pres, rho, c, g, mu, nu, k, n, n_sum] = ...
+%    atmosphere(); 
 
-% Wavelength chart
-% http://www.lexellaser.com/techinfo_wavelengths.htm
-%   Far-infrared   1.54e-6 meters
-%   Near-infrared  7e-7 to 1.35e-6 meters
-%   Visible        4.16e-7 to 6.94e-7 meters
-%   Fiberoptics operate around the 7.5e-7 to 1.4e-6 meters region
-%   Atmosphere attenuation significantly increases around 1.45e-6 meters
-lambda = 4.16e-7:1e-9:1.54e-6;  %Full range, can change this
-Pt     = 0.1:0.01:5;    % .1 to 5 watts power transmitted
+%  Wavelength chart
+%  http://www.lexellaser.com/techinfo_wavelengths.htm
+%    Far-infrared   1.54e-6 meters
+%    Near-infrared  7e-7 to 1.35e-6 meters
+%    Visible        4.16e-7 to 6.94e-7 meters
+%    Fiberoptics operate around the 7.5e-7 to 1.4e-6 meters region
+%    Atmosphere attenuation significantly increases around 1.45e-6 meters
+lambda = 4.16e-7:1e-9:1.54e-6;  % Full range, can change this
+Pt     = 0.1:0.01:5;            % .1 to 5 watts power transmitted
 At     = pi.*((0.001:0.001:0.045).^2); % Area of the laser
-                                       % transmitter in meters
-Ar     = At;
-Range  = 
-
-
-function [Pr] = OFSL(Pt, Lt, Lr, At, Ar, R, lambda)
+                                       % appature in meters
+Ar     = At;  %Using the same apature on both TX and RX
+range  = 1:1:(max_range(sc_radius,earth_radius).*1000); % distances 
+                                                      % between sc meters
+TX_RX_system_loss = 10^(-57.8/20);  % Unitless, converted from dB
+                                    % More info: 
+                                    %Free-Space Laser
+                                    %Communications: 
+                                    %Principles and Advances
+                                    % By Arun K. Majumdar
+normal_range = 1; %meters
+Pr = OFSL(Pt(end), TX_RX_system_loss, TX_RX_system_loss, At(end), ...
+          Ar(end), normal_range, lambda(1))
 
 
 end
 
-
-
-
-%% The distance between the spacecraft determine how much the
-%% signal is traveling through the atmosphere.
-%% In order to get the altitude of the middle of the beam (Which is
-%% the lowest point in the atmosphere that the beam will traval), a
-%% simple geometric relation is made.
 
 % Wrapper function for the atmo function, so we can see outputs
 % easily
@@ -72,11 +74,12 @@ end
 
 function [Pr] = OFSL(Pt, Lt, Lr, At, Ar, R, lambda)
 %%Apature loss was added without verification, need to verify %%
-  apature_loss = 1 - exp(-2);
+  apature_loss = 1 - exp(-2)
   RX_gain      = (4*pi*Ar)/lambda^2;
   range_loss   = (lambda/(4*pi*R))^2;
   TX_gain      = (4*pi*At)/lambda^2;
-  Pr           = Lr*RX_gain*range_loss*TX_gain*Lt*Pt*apature_loss^2;
+  Pr           = Lr*RX_gain*range_loss*TX_gain*Lt*Pt* ...
+                   apature_loss^2;
 end
 
 %Maximum data rate that can be acheived with power received
@@ -101,6 +104,21 @@ function [w] = beam_width(lambda, w0, R)
   w = w0*sqrt(1 + (R/zr)^2);
 end
 
+% Function to find the absolute maximum communication range of
+% satillites given they need to be within LOS
+% Input:
+%   sc_radius               = Radius of orbit from center of gravity (km)
+%   earth_radius            = Radius of Earth (km)
+% Output:
+%   max_distance_between_sc = Distance between spacecraft (km)
+function [max_distance_between_sc] = max_range(sc_radius, ...
+                                               earth_radius)
+  %  angle_between_crafts = 2*acos(earth_radius/sc_radius);
+  %  max_distance_between_sc =
+  %  sin(angle_between_crafts/2)*(2*sc_radius);
+  max_distance_between_sc = 2*sqrt(sc_radius^2 - earth_radius^2);
+end
+
 % Function to propogate altitude values over a beam traveled 
 % Input:
 %   distance_between_sc = Distance between spacecraft (km)
@@ -109,7 +127,7 @@ end
 %   division            = Deltax of signal propogation 
 % Output:
 %   altitudes           = List of altitudes from center of earth (km)
-%   valid               = Valid signal (> earth radius) 
+%   valid               = Valid signal (> earth radius for now) 
 function [altitudes, valid] = list_altitudes(distance_between_sc, ...
                                              sc_radius, ...
                                              earth_radius, ...
@@ -121,10 +139,10 @@ function [altitudes, valid] = list_altitudes(distance_between_sc, ...
   else valid = 1;
   end
   
-  i = 1
+  i = 1;
   for x = -distance_between_sc/2:division:distance_between_sc/2
     altitude(i) = sqrt(x^2 + lowest_altitude^2) - earth_radius;
-    i += 1;
+    i = i + 1;
   end
 end
 
