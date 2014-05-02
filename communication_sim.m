@@ -8,6 +8,8 @@ function communication_sim
 sc_altitude  = 370; %km
 earth_radius = 6378.1; %km
 sc_radius    = sc_altitude + earth_radius; %km
+planck_c     = 6.626e-34;
+c            = 299792458; %m/s  
 %[altitude, temp, pres, rho, c, g, mu, nu, k, n, n_sum] = ...
 %    atmosphere(); 
 
@@ -16,25 +18,57 @@ sc_radius    = sc_altitude + earth_radius; %km
 %    Far-infrared   1.54e-6 meters
 %    Near-infrared  7e-7 to 1.35e-6 meters
 %    Visible        4.16e-7 to 6.94e-7 meters
-%    Fiberoptics operate around the 7.5e-7 to 1.4e-6 meters region
-%    Atmosphere attenuation significantly increases around 1.45e-6 meters
-lambda = 4.16e-7:1e-9:1.54e-6;  % Full range, can change this
-Pt     = 0.1:0.01:5;            % .1 to 5 watts power transmitted
-At     = pi.*((0.001:0.001:0.045).^2); % Area of the laser
-                                       % appature in meters
-Ar     = At;  %Using the same apature on both TX and RX
-range  = 1:1:(max_range(sc_radius,earth_radius).*1000); % distances 
-                                                      % between sc meters
-TX_RX_system_loss = 10^(-57.8/20);  % Unitless, converted from dB
+%    Fiber optic comm operates around the 7.5e-7 to 1.4e-6 meters region
+%    Atmosphere attenuation significantly increases around 1.45e-6
+%     According to Laser experts, the best wavelength to use for
+%     space communication, would be 1060, since Silicon's
+%     transmisitivity peaks at this wavelength and any water
+%     absorption can be neglected
+
+%lambda = 4.16e-7:1e-9:1.54e-6;  % Full range, can change this
+lambda = 1.06e-6;
+Pt     = 0.1:0.01:14;            % .1 to 10 watts power transmitted
+Dt     = (0.001:0.001:0.045);    % Diameter of the laser appature in meters
+Dr     = Dt;  %Using the same apature on both TX and RX
+range  = 300:100:(max_range(sc_radius,earth_radius).*1000); % distances 
+                                                      % between sc
+                                                      % meters
+beam_waist = 0.0001; % beam waist in meters
+TX_RX_system_loss = 1;%10^(-57.8/20);  % Unitless, converted from dB
                                     % More info: 
                                     %Free-Space Laser
                                     %Communications: 
                                     %Principles and Advances
                                     % By Arun K. Majumdar
-normal_range = 1; %meters
-Pr = OFSL(Pt(end), TX_RX_system_loss, TX_RX_system_loss, At(end), ...
-          Ar(end), normal_range, lambda(1))
+nu = 100; % photons/bit is the typical sensitivity of a silicon receiver
 
+i = 1;
+for r = range
+  [Pr(i),laser_area_at_RX] = OFSL(Pt(end), TX_RX_system_loss, ...
+                             TX_RX_system_loss, beam_waist, ...
+                             Dr(end), r, lambda);
+  diameter = 2*sqrt(laser_area_at_RX/pi);
+  max_datarate(i) = datarate(Pr(i), nu, lambda, c, planck_c);
+  theta(i) = pointing_req(Dr(end), 2*sqrt(laser_area_at_RX/pi), r);
+  i = i + 1;
+end
+
+  [Pr,laser_area_at_RX] = OFSL(Pt(end), TX_RX_system_loss, ...
+                             TX_RX_system_loss, beam_waist, ...
+                             Dr(end), 500000, lambda)
+  diameter = 2*sqrt(laser_area_at_RX/pi)
+  max_datarate = datarate(Pr, nu, lambda, c, planck_c)
+  theta = pointing_req(Dr(end), 2*sqrt(laser_area_at_RX/pi), 500000)
+
+
+  %figure('Name','Range vs. pointing requirements');
+  %plot(range, theta);
+
+  %figure('Name', 'Range vs. Power received');
+  %plot(range, Pr);
+
+  %figure('Name','Range vs. max datarate');
+  %plot(range, max_datarate);
 
 end
 
@@ -62,34 +96,54 @@ function [altitude, temp, pres, rho, c, g, mu, nu, k, n, n_sum] = ...
 end
 
 
-% Optical free space link equation
+% Optical free space link equation Assuming flat beam power width
+%   For more complex and accurate solution, add Gaussian diffusion.
 % Input:
 %   Pt     = Power transmitted (W)
 %   Lt/r   = Transmitter/Receiver Loss 
-%   At/r   = Transmitter/Receiver Aperture Area (m)
+%   Dt/r   = Transmitter/Receiver Aperture Diameter (m)
 %   R      = Range (m)
 %   lambda = Wavelength (m)
 % Output:
 %   Pr     = Power Received
-
-function [Pr] = OFSL(Pt, Lt, Lr, At, Ar, R, lambda)
-%%Apature loss was added without verification, need to verify %%
-  apature_loss = 1 - exp(-2)
-  RX_gain      = (4*pi*Ar)/lambda^2;
-  range_loss   = (lambda/(4*pi*R))^2;
-  TX_gain      = (4*pi*At)/lambda^2;
-  Pr           = Lr*RX_gain*range_loss*TX_gain*Lt*Pt* ...
-                   apature_loss^2;
+function [Pr,laser_area_at_RX] = OFSL(Pt, Lt, Lr, Dt, Dr, R, lambda)
+  apature_loss     = 1 - exp(-2);
+  beam_div_angle   = lambda / (2*pi*Dt);
+  power_density_TX = Pt/(pi*(Dt/2)^2);
+  laser_area_at_RX = pi*(R*beam_div_angle)^2;
+  power_density_RX = Pt/laser_area_at_RX;
+  ideal_Pr         = power_density_RX*(pi*(Dr/2)^2);
+  Pr               = Lr*Lt*ideal_Pr*apature_loss^2;
 end
+
+
+% Pointing accuracy 
+% TODO: Gaussian equation and power losses
+% Input:
+%   Dr     = Receiver Aperture Diameter (m)
+%   beam_d = Diameter of beam at Receiver (m)
+%   R      = Range (m)
+% Output:
+%   theta  = +/- degrees pointing requirement
+
+function [theta] = pointing_req(Dr, beam_d, R)
+  theta = sind(abs(beam_d - Dr)/R);
+end
+
+
 
 %Maximum data rate that can be acheived with power received
 % Input: 
-%   Pr = Power Received (W)
-%   nu = Receiver Sensitivity (photons/bit)
+%   Pr       = Power Received (W)
+%   nu       = Receiver Sensitivity (photons/bit)
+%   lambda   = Wavelength (m)
+%   c        = Speed of light constant (m)
+%   planck_c = Planck's constant
 % Output:
 %   dr = Max datarate (bits/sec)
-function [dr] = datarate(Pr, nu)
-  dr = Pr/nu;
+function [dr] = datarate(Pr, nu, lambda, c, planck_c)
+  v = c/lambda;
+  dr = Pr/(planck_c*v*nu);
 end
 
 %Gaussian beam divergance and beam width
@@ -113,9 +167,6 @@ end
 %   max_distance_between_sc = Distance between spacecraft (km)
 function [max_distance_between_sc] = max_range(sc_radius, ...
                                                earth_radius)
-  %  angle_between_crafts = 2*acos(earth_radius/sc_radius);
-  %  max_distance_between_sc =
-  %  sin(angle_between_crafts/2)*(2*sc_radius);
   max_distance_between_sc = 2*sqrt(sc_radius^2 - earth_radius^2);
 end
 
